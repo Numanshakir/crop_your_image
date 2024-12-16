@@ -94,7 +94,7 @@ class Crop extends StatelessWidget {
   final ValueChanged<CropStatus>? onStatusChanged;
 
   /// [Widget] show loading inditor in the croped area
-  final Widget cropAreaLoadingIndicator;
+  final Widget? cropAreaLoadingIndicator;
 
   /// [Color] of the interactive area widget which is placed over the cropping editor.
   final Color? interactiveAreaColor;
@@ -171,7 +171,7 @@ class Crop extends StatelessWidget {
     this.maskColor,
     this.baseColor = Colors.white,
     this.interactiveAreaColor,
-    this.cropAreaLoadingIndicator = false,
+    this.cropAreaLoadingIndicator,
     this.radius = 0,
     this.cornerDotBuilder,
     this.clipBehavior = Clip.hardEdge,
@@ -248,7 +248,7 @@ class _CropEditor extends StatefulWidget {
   final ValueChanged<CropStatus>? onStatusChanged;
   final Color? maskColor;
   final Color? interactiveAreaColor;
-  final Widget cropAreaLoadingIndicator;
+  final Widget? cropAreaLoadingIndicator;
   final Color baseColor;
   final double radius;
   final CornerDotBuilder? cornerDotBuilder;
@@ -278,7 +278,7 @@ class _CropEditor extends StatefulWidget {
     required this.onStatusChanged,
     required this.maskColor,
     required this.interactiveAreaColor,
-    required this.cropAreaLoadingIndicator,
+    this.cropAreaLoadingIndicator,
     required this.baseColor,
     required this.radius,
     required this.cornerDotBuilder,
