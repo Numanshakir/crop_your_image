@@ -22,14 +22,14 @@ typedef CornerDotBuilder = Widget Function(
     double size, EdgeAlignment edgeAlignment);
 
 typedef CroppingRectBuilder = ViewportBasedRect Function(
-  ViewportBasedRect viewportRect,
-  ImageBasedRect imageRect,
-);
+    ViewportBasedRect viewportRect,
+    ImageBasedRect imageRect,
+    );
 
 typedef OnMovedCallback = void Function(
-  ViewportBasedRect viewportRect,
-  ImageBasedRect imageRect,
-);
+    ViewportBasedRect viewportRect,
+    ImageBasedRect imageRect,
+    );
 
 typedef OverlayBuilder = Widget Function(BuildContext context, Rect rect);
 
@@ -92,6 +92,9 @@ class Crop extends StatelessWidget {
   /// note: Currently, the very first callback is [CropStatus.ready]
   /// which is called after loading [image] data for the first time.
   final ValueChanged<CropStatus>? onStatusChanged;
+
+  /// [bool] show loading inditor in the croped area
+  final bool showLoadingIndicator;
 
   /// [Color] of the interactive area widget which is placed over the cropping editor.
   final Color? interactiveAreaColor;
@@ -166,8 +169,9 @@ class Crop extends StatelessWidget {
     this.onImageMoved,
     this.onStatusChanged,
     this.maskColor,
-    this.interactiveAreaColor,
     this.baseColor = Colors.white,
+    this.interactiveAreaColor,
+    this.showLoadingIndicator = false,
     this.radius = 0,
     this.cornerDotBuilder,
     this.clipBehavior = Clip.hardEdge,
@@ -182,7 +186,8 @@ class Crop extends StatelessWidget {
     this.scrollZoomSensitivity = 0.05,
     this.overlayBuilder,
     this.filterQuality = FilterQuality.medium,
-  })  : this.imageParser = imageParser ?? defaultImageParser,
+  })
+      : this.imageParser = imageParser ?? defaultImageParser,
         this.formatDetector = formatDetector ?? defaultFormatDetector;
 
   @override
@@ -206,7 +211,6 @@ class Crop extends StatelessWidget {
             onImageMoved: onImageMoved,
             onStatusChanged: onStatusChanged,
             maskColor: maskColor,
-            interactiveAreaColor: interactiveAreaColor,
             baseColor: baseColor,
             radius: radius,
             cornerDotBuilder: cornerDotBuilder,
@@ -222,6 +226,9 @@ class Crop extends StatelessWidget {
             imageParser: imageParser,
             overlayBuilder: overlayBuilder,
             filterQuality: filterQuality,
+            interactiveAreaColor: interactiveAreaColor,
+            showLoadingIndicator: showLoadingIndicator,
+
           ),
         );
       },
@@ -241,6 +248,7 @@ class _CropEditor extends StatefulWidget {
   final ValueChanged<CropStatus>? onStatusChanged;
   final Color? maskColor;
   final Color? interactiveAreaColor;
+  final bool showLoadingIndicator;
   final Color baseColor;
   final double radius;
   final CornerDotBuilder? cornerDotBuilder;
@@ -269,8 +277,9 @@ class _CropEditor extends StatefulWidget {
     required this.onImageMoved,
     required this.onStatusChanged,
     required this.maskColor,
-    required this.baseColor,
     required this.interactiveAreaColor,
+    required this.showLoadingIndicator,
+    required this.baseColor,
     required this.radius,
     required this.cornerDotBuilder,
     required this.clipBehavior,
@@ -428,7 +437,9 @@ class _CropEditorState extends State<_CropEditor> {
     _lastImage = image;
 
     _viewState = PreparingCropEditorViewState(
-      viewportSize: MediaQuery.of(context).size,
+      viewportSize: MediaQuery
+          .of(context)
+          .size,
       withCircleUi: widget.withCircleUi,
       aspectRatio: widget.aspectRatio,
     );
@@ -579,7 +590,9 @@ class _CropEditorState extends State<_CropEditor> {
     if (signal is PointerScrollEvent) {
       final now = DateTime.now();
       if (_pointerSignalLastUpdated == null ||
-          now.difference(_pointerSignalLastUpdated!).inMilliseconds > 500) {
+          now
+              .difference(_pointerSignalLastUpdated!)
+              .inMilliseconds > 500) {
         _pointerSignalLastUpdated = now;
         _historyState.pushHistory(_readyState);
       }
@@ -599,8 +612,7 @@ class _CropEditorState extends State<_CropEditor> {
   }
 
   /// apply scale updated to view state
-  void _applyScale(
-    double nextScale, {
+  void _applyScale(double nextScale, {
     Offset? focalPoint,
   }) {
     final allowScale = widget.willUpdateScale?.call(nextScale) ?? true;
@@ -622,139 +634,156 @@ class _CropEditorState extends State<_CropEditor> {
     return !_viewState.isReady
         ? Center(child: widget.progressIndicator)
         : Stack(
-            clipBehavior: widget.clipBehavior,
-            children: [
-              Listener(
-                onPointerSignal: _handlePointerSignal,
-                child: GestureDetector(
-                  onScaleStart: widget.interactive ? _handleScaleStart : null,
-                  onScaleUpdate: widget.interactive ? _handleScaleUpdate : null,
-                  child: Container(
-                    color: widget.baseColor,
-                    width: MediaQuery.of(context).size.width,
-                    height: MediaQuery.of(context).size.height,
-                    child: Stack(
-                      children: [
-                        SizedBox.expand(),
-                        Positioned(
-                          left: _readyState.imageRect.left,
-                          top: _readyState.imageRect.top,
-                          child: Image.memory(
-                            widget.image,
-                            width: _readyState.imageRect.width,
-                            height: _readyState.imageRect.height,
-                            fit: BoxFit.contain,
-                            filterQuality: widget.filterQuality,
-                          ),
-                        ),
-                      ],
+      clipBehavior: widget.clipBehavior,
+      children: [
+        Listener(
+          onPointerSignal: _handlePointerSignal,
+          child: GestureDetector(
+            onScaleStart: widget.interactive ? _handleScaleStart : null,
+            onScaleUpdate: widget.interactive ? _handleScaleUpdate : null,
+            child: Container(
+              color: widget.baseColor,
+              width: MediaQuery
+                  .of(context)
+                  .size
+                  .width,
+              height: MediaQuery
+                  .of(context)
+                  .size
+                  .height,
+              child: Stack(
+                children: [
+                  SizedBox.expand(),
+                  Positioned(
+                    left: _readyState.imageRect.left,
+                    top: _readyState.imageRect.top,
+                    child: Image.memory(
+                      widget.image,
+                      width: _readyState.imageRect.width,
+                      height: _readyState.imageRect.height,
+                      fit: BoxFit.contain,
+                      filterQuality: widget.filterQuality,
                     ),
                   ),
-                ),
+                ],
               ),
-              if (widget.overlayBuilder != null)
-                Positioned.fromRect(
-                  rect: _readyState.cropRect,
-                  child: IgnorePointer(
-                    child:
-                        widget.overlayBuilder!(context, _readyState.cropRect),
+            ),
+          ),
+        ),
+        if (widget.overlayBuilder != null)
+          Positioned.fromRect(
+            rect: _readyState.cropRect,
+            child: IgnorePointer(
+              child:
+              widget.overlayBuilder!(context, _readyState.cropRect),
+            ),
+          ),
+        IgnorePointer(
+          child: ClipPath(
+            clipper: _readyState.withCircleUi
+                ? CircleCropAreaClipper(_readyState.cropRect)
+                : CropAreaClipper(_readyState.cropRect, widget.radius),
+            child: Container(
+              width: double.infinity,
+              height: double.infinity,
+              color: widget.maskColor ?? Colors.black.withAlpha(100),
+            ),
+          ),
+        ),
+        if (!widget.interactive && !widget.fixCropRect)
+          Positioned(
+            left: _readyState.cropRect.left,
+            top: _readyState.cropRect.top,
+            child: GestureDetector(
+              onPanStart: (details) =>
+                  _historyState.pushHistory(_readyState),
+              onPanUpdate: (details) =>
+                  _updateCropRect(
+                    _readyState.moveRect(details.delta),
                   ),
-                ),
-              IgnorePointer(
-                child: ClipPath(
-                  clipper: _readyState.withCircleUi
-                      ? CircleCropAreaClipper(_readyState.cropRect)
-                      : CropAreaClipper(_readyState.cropRect, widget.radius),
-                  child: Container(
-                    width: double.infinity,
-                    height: double.infinity,
-                    color: widget.maskColor ?? Colors.black.withAlpha(100),
-                  ),
-                ),
-              ),
-              if (!widget.interactive && !widget.fixCropRect)
-                Positioned(
-                  left: _readyState.cropRect.left,
-                  top: _readyState.cropRect.top,
-                  child: GestureDetector(
-                    onPanStart: (details) =>
-                        _historyState.pushHistory(_readyState),
-                    onPanUpdate: (details) => _updateCropRect(
-                      _readyState.moveRect(details.delta),
+              child: Container(
+                width: _readyState.cropRect.width,
+                height: _readyState.cropRect.height,
+                color: widget.interactiveAreaColor ?? Colors.transparent,
+                child: widget.showLoadingIndicator ? Center(
+                    child: CupertinoActivityIndicator(
+                      radius: 15.0,
+                      color: Color(0xffee8782)
                     ),
-                    child: Container(
-                      width: _readyState.cropRect.width,
-                      height: _readyState.cropRect.height,
-                       color: widget.interactiveAreaColor ?? Colors.transparent,
-                    ),
-                  ),
-                ),
-              Positioned(
-                left: _readyState.cropRect.left - (dotTotalSize / 2),
-                top: _readyState.cropRect.top - (dotTotalSize / 2),
-                child: GestureDetector(
-                  onPanStart: (details) =>
-                      _historyState.pushHistory(_readyState),
-                  onPanUpdate: widget.fixCropRect
-                      ? null
-                      : (details) => _updateCropRect(
-                            _readyState.moveTopLeft(details.delta),
-                          ),
-                  child: widget.cornerDotBuilder
-                          ?.call(dotTotalSize, EdgeAlignment.topLeft) ??
-                      const DotControl(),
-                ),
+                ) : null,
               ),
-              Positioned(
-                left: _readyState.cropRect.right - (dotTotalSize / 2),
-                top: _readyState.cropRect.top - (dotTotalSize / 2),
-                child: GestureDetector(
-                  onPanStart: (details) =>
-                      _historyState.pushHistory(_readyState),
-                  onPanUpdate: widget.fixCropRect
-                      ? null
-                      : (details) => _updateCropRect(
-                            _readyState.moveTopRight(details.delta),
-                          ),
-                  child: widget.cornerDotBuilder
-                          ?.call(dotTotalSize, EdgeAlignment.topRight) ??
-                      const DotControl(),
+            ),
+          ),
+        Positioned(
+          left: _readyState.cropRect.left - (dotTotalSize / 2),
+          top: _readyState.cropRect.top - (dotTotalSize / 2),
+          child: GestureDetector(
+            onPanStart: (details) =>
+                _historyState.pushHistory(_readyState),
+            onPanUpdate: widget.fixCropRect
+                ? null
+                : (details) =>
+                _updateCropRect(
+                  _readyState.moveTopLeft(details.delta),
                 ),
-              ),
-              Positioned(
-                left: _readyState.cropRect.left - (dotTotalSize / 2),
-                top: _readyState.cropRect.bottom - (dotTotalSize / 2),
-                child: GestureDetector(
-                  onPanStart: (details) =>
-                      _historyState.pushHistory(_readyState),
-                  onPanUpdate: widget.fixCropRect
-                      ? null
-                      : (details) => _updateCropRect(
-                            _readyState.moveBottomLeft(details.delta),
-                          ),
-                  child: widget.cornerDotBuilder
-                          ?.call(dotTotalSize, EdgeAlignment.bottomLeft) ??
-                      const DotControl(),
+            child: widget.cornerDotBuilder
+                ?.call(dotTotalSize, EdgeAlignment.topLeft) ??
+                const DotControl(),
+          ),
+        ),
+        Positioned(
+          left: _readyState.cropRect.right - (dotTotalSize / 2),
+          top: _readyState.cropRect.top - (dotTotalSize / 2),
+          child: GestureDetector(
+            onPanStart: (details) =>
+                _historyState.pushHistory(_readyState),
+            onPanUpdate: widget.fixCropRect
+                ? null
+                : (details) =>
+                _updateCropRect(
+                  _readyState.moveTopRight(details.delta),
                 ),
-              ),
-              Positioned(
-                left: _readyState.cropRect.right - (dotTotalSize / 2),
-                top: _readyState.cropRect.bottom - (dotTotalSize / 2),
-                child: GestureDetector(
-                  onPanStart: (details) =>
-                      _historyState.pushHistory(_readyState),
-                  onPanUpdate: widget.fixCropRect
-                      ? null
-                      : (details) => _updateCropRect(
-                            _readyState.moveBottomRight(details.delta),
-                          ),
-                  child: widget.cornerDotBuilder
-                          ?.call(dotTotalSize, EdgeAlignment.bottomRight) ??
-                      const DotControl(),
+            child: widget.cornerDotBuilder
+                ?.call(dotTotalSize, EdgeAlignment.topRight) ??
+                const DotControl(),
+          ),
+        ),
+        Positioned(
+          left: _readyState.cropRect.left - (dotTotalSize / 2),
+          top: _readyState.cropRect.bottom - (dotTotalSize / 2),
+          child: GestureDetector(
+            onPanStart: (details) =>
+                _historyState.pushHistory(_readyState),
+            onPanUpdate: widget.fixCropRect
+                ? null
+                : (details) =>
+                _updateCropRect(
+                  _readyState.moveBottomLeft(details.delta),
                 ),
-              ),
-            ],
-          );
+            child: widget.cornerDotBuilder
+                ?.call(dotTotalSize, EdgeAlignment.bottomLeft) ??
+                const DotControl(),
+          ),
+        ),
+        Positioned(
+          left: _readyState.cropRect.right - (dotTotalSize / 2),
+          top: _readyState.cropRect.bottom - (dotTotalSize / 2),
+          child: GestureDetector(
+            onPanStart: (details) =>
+                _historyState.pushHistory(_readyState),
+            onPanUpdate: widget.fixCropRect
+                ? null
+                : (details) =>
+                _updateCropRect(
+                  _readyState.moveBottomRight(details.delta),
+                ),
+            child: widget.cornerDotBuilder
+                ?.call(dotTotalSize, EdgeAlignment.bottomRight) ??
+                const DotControl(),
+          ),
+        ),
+      ],
+    );
   }
 }
 
